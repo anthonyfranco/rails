@@ -1896,7 +1896,16 @@ class HeaderOrLegacyTokenProtectionControllerTest < ActionController::TestCase
     assert_response :success
   end
 
-  test "blocks POST with cross-site Sec-Fetch-Site" do
+  test "allows POST with cross-site Sec-Fetch-Site and valid token" do
+    initialize_csrf_token
+    @request.set_header "HTTP_SEC_FETCH_SITE", "cross-site"
+    @controller.stub :form_authenticity_token, @token do
+      post :index, params: { custom_authenticity_token: @token }
+      assert_response :success
+    end
+  end
+
+  test "blocks POST with cross-site Sec-Fetch-Site without token" do
     @request.set_header "HTTP_SEC_FETCH_SITE", "cross-site"
     assert_raises(ActionController::InvalidCrossOriginRequest) do
       post :index

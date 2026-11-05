@@ -252,9 +252,9 @@ module ActionController # :nodoc:
       #
       #     *   `:header_or_legacy_token` - A hybrid approach that first checks the
       #         `Sec-Fetch-Site` header. If the header indicates same-site or
-      #         same-origin, the request is allowed. Requests with a cross-site
-      #         value are rejected. When the header is missing or "none", it falls
-      #         back to checking the authenticity token. This mode logs when
+      #         same-origin, the request is allowed. Otherwise, including when the
+      #         header is cross-site, missing, or "none", it falls back to
+      #         checking the authenticity token. This mode logs when
       #         falling back to help identify requests that should be fixed to work
       #         with `:header_only`. Use this if you need to support older browsers
       #         that don't send the `Sec-Fetch-Site` header.
@@ -664,11 +664,15 @@ module ActionController # :nodoc:
         when "same-origin", "same-site"
           true
         when "cross-site"
-          origin_trusted?
+          origin_trusted? || verified_with_authenticity_token?
         else # "none" or missing
-          instrument_csrf_token_fallback
-          any_authenticity_token_valid?
+          verified_with_authenticity_token?
         end
+      end
+
+      def verified_with_authenticity_token?
+        instrument_csrf_token_fallback
+        any_authenticity_token_valid?
       end
 
       def instrument_csrf_token_fallback
